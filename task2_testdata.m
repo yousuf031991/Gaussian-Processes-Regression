@@ -1,4 +1,5 @@
 load Gaussian_process_regression_data.mat;
+load task2actual_data.mat;
 %picking optimized hyperparameters
 l=0.5552;
 sigma_f=0.0816;
@@ -46,9 +47,25 @@ alpha=L'\(L\Y_o);
 disp('Our predicted data(mean)');
 Mu = K_s*alpha;
 disp(Mu);
-disp('Our predicted confidence(covariance)');
 v=L\K_s';
-Sigma = K_ss-v'*v;
-disp(Sigma);
-target_test=Mu;
-save('YousufHussain_SyedMohammad.mat','target_test');
+Sigma = 1.96*sqrt(diag(K_ss-v'*v));
+upper_confidence=Mu+Sigma;
+lower_confidence=Mu-Sigma;
+target_predicted=Mu;
+save('task2output.mat','target_predicted');
+figure
+plot_variance = @(x,lower,upper,color) set(fill([x,x(end:-1:1)],[upper,fliplr(lower)],color),'EdgeColor',color);
+plot_variance([1:size(target_test,1)],(lower_confidence)',(upper_confidence)',[0.8 0.8 0.8])
+hold on
+set(plot(Mu,'k-'),'LineWidth',1)
+set(plot(target_test,'r.'),'MarkerSize',8)
+%Calculating how many actual data points do not lie in our confidence
+%interval
+count_outliers=0;
+for i=1:size(target_test,1)
+    if target_test(i)>upper_confidence(i) || target_test(i)<lower_confidence(i)
+        count_outliers=count_outliers+1;
+    end
+end
+title (['Number of points which lie outside the confidence interval=' num2str(count_outliers) ' of ' num2str(size(target_test,1))])
+legend('confidence bounds','prediction(mean)','actual data points','location','SouthEast')
